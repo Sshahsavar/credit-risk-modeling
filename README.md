@@ -60,6 +60,7 @@ The data is not included in this repository. See **How to Run**.
 - WOE / IV feature selection (bins fitted on training data only).
 - WOE logistic scorecard (champion) vs. LightGBM (challenger), with no class weights so the PDs stay calibrated.
 - Calibration-in-the-large, calibration by decile, and PDO score scaling (600 points = 50:1 odds, 20 points to double the odds).
+- **Population stability:** PSI of the score, CSI per scorecard variable, and PSI by vintage (the standard ongoing-monitoring check, with the 0.10 / 0.25 thresholds).
 - SHAP explainability.
 - Profit optimization on **realized cash flows**:
   - each loan's actual interest income until payoff or default;
