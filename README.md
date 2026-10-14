@@ -21,7 +21,7 @@ $$EL = PD \times LGD \times EAD$$
 | Part | Notebook | Main question | Main result |
 |---|---|---|---|
 | 0 | `Part 0 - Credit Risk Data Foundation.ipynb` | What data do we need, and how do we prepare it? | 2,260,668 clean loans with outcome, exit date, exposure and recoveries; unemployment for every state, 2000–2026 |
-| 1 | `Part 1 - Loss Given Default (LGD) Modeling.ipynb` | How much do we lose when a borrower defaults? | LGD 91.2%; +0.34 points of LGD per +1 point of unemployment |
+| 1 | `Part 1 - Loss Given Default (LGD) Modeling.ipynb` | How much do we lose when a borrower defaults? | LGD 91.2%; +0.29 points of LGD per +1 point of unemployment (downturn LGD 92.1–93.4%) |
 | 2 | `Part 2 - Benchmarking Classification Algorithms for Credit Risk.ipynb` | Which model predicts default best? | Gradient boosting leads (AUC ≈ 0.670) ahead of the WOE scorecard (0.653); Lending Club's own sub-grade is still best (0.679) |
 | 3 | `Part 3 - End-to-End Credit Risk Modeling (PD & Portfolio Optimization).ipynb` | How do we build, check and use a PD model? | LightGBM AUC 0.672, KS 25.0; stable population (PSI 0.0002) but about 10% more defaults than predicted; break-even PD 26.8% |
 | 4 | `Part 4 - Macroeconomic Credit Stress Testing.ipynb` | How much would the portfolio lose in a recession? | Baseline 9-quarter loss 9.5% (\$868M); validation shows the PD model understates the effect of the economy |
@@ -79,8 +79,8 @@ The data is not included in this repository.
 
 **Part 1: LGD.**
 * **Measurement:** workout LGD with discounted recoveries, with a correction for unfinished recoveries.
-* **Five models, out of time:** grade average, OLS, fractional logit (hand-coded IRLS with robust standard errors), a two-stage model and LightGBM.
-* **Downturn LGD:** a macro model linking LGD to unemployment.
+* **Six models, out of time:** grade average, OLS, fractional logit (hand-coded IRLS with robust standard errors), a two-stage model, LightGBM, and a two-stage LightGBM (class-weighted stage 1 with a probability correction, cross-entropy stage 2).
+* **Downturn LGD:** a two-stage macro model (the structure of the best model) linking the probability of a full loss and the partial-loss LGD to unemployment, checked against the full two-stage model.
 
 **Part 2: PD algorithm benchmark.**
 * **Sample and test:** 36-month loans 2010–2015; training on 2010–2014 and an out-of-time test on 2015.
@@ -117,7 +117,7 @@ The data is not included in this repository.
 2. **Out-of-time testing matters.** The 2015 loans defaulted more than the 2010–2014 loans (14.9% vs. 13.1%). Every PD model ranked borrowers well but predicted about 10% too few defaults.
 3. **The population did not change, the behavior did.** The score's PSI is 0.0002, so the 2015 borrowers looked like earlier borrowers. This is concept drift, and the right response is to recalibrate the model, not to rebuild it.
 4. **Risk-based pricing had already done most of the work.** With real interest income and a 91% LGD, a loan is profitable up to a PD of 26.8%. Almost no approved loan is above that level, so a stricter cut-off adds only 0.7% profit.
-5. **The stress test is a model validation case study.** The severe scenario raises the loss only from 9.51% to 9.73%. The validation traces this to a missing vintage effect: lending became riskier while unemployment was falling, and the model confuses the two trends. The notebook documents the diagnosis and a plan to fix it.
+5. **The stress test is a model validation case study.** The severe scenario raises the loss only from 9.51% to 9.74%. The validation traces this to a missing vintage effect: lending became riskier while unemployment was falling, and the model confuses the two trends. The notebook documents the diagnosis and a plan to fix it.
 6. **The investor's view confirms the 2015 weakness.** Forward-flow monitoring flags 6 batches, 5 of them from 2015. The senior notes are very safe (break-even at 7.5× expected loss), but equity carries the risk: it loses money at 1.8× expected loss and is sensitive to prepayment and interest income.
 
 ---
