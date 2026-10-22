@@ -4,11 +4,12 @@ This project goes through the main steps of credit risk measurement on one real 
 
 It starts with raw data. It then measures loss given default (LGD), builds and validates a probability of default (PD) model, runs a macroeconomic stress test, and ends with an investor's view: buying loans every month and financing them with a securitization.
 
-Each notebook follows the same structure:
-* what the part does and how it connects to the other parts;
-* why it matters for credit risk;
-* the method, the math and the code;
-* the result of every step, based on the actual run.
+Each notebook treats one credit risk problem and follows the same structure:
+* **Business Problem:** the risk question the part answers and the methodological challenges behind it;
+* **Solution Path:** the method and a table of steps, with what each step achieves and where its result is used;
+* **Inputs** from earlier parts and an **Executive Summary of Results**;
+* **Steps:** each step explains the problem it solves and the method, followed by the code and a **Results** section based on the actual run;
+* **Conclusions & Key Takeaways** and **Limitations**.
 
 ---
 
@@ -23,7 +24,7 @@ $$EL = PD \times LGD \times EAD$$
 | 0 | `Part 0 - Credit Risk Data Foundation.ipynb` | What data do we need, and how do we prepare it? | 2,260,668 clean loans with outcome, exit date, exposure and recoveries; unemployment for every state, 2000–2026 |
 | 1 | `Part 1 - Loss Given Default (LGD) Modeling.ipynb` | How much do we lose when a borrower defaults? | LGD 91.2%; +0.29 points of LGD per +1 point of unemployment (downturn LGD 92.1–93.4%) |
 | 2 | `Part 2 - Benchmarking Classification Algorithms for Credit Risk.ipynb` | Which model predicts default best? | Gradient boosting leads (AUC ≈ 0.670) ahead of the WOE scorecard (0.653); Lending Club's own sub-grade is still best (0.679) |
-| 3 | `Part 3 - End-to-End Credit Risk Modeling (PD & Portfolio Optimization).ipynb` | How do we build, check and use a PD model? | LightGBM AUC 0.672, KS 25.0; stable population (PSI 0.0002) but about 10% more defaults than predicted; break-even PD 26.8% |
+| 3 | `Part 3 - End-to-End Credit Risk Modeling (PD & Portfolio Optimization).ipynb` | How do we build, check and use a PD model? | LightGBM AUC 0.672, KS 25.0; a LightGBM-guided scorecard closes only 5–14% of the gap; stable population (PSI 0.0002) but about 10% more defaults than predicted; break-even PD 26.8% |
 | 4 | `Part 4 - Macroeconomic Credit Stress Testing.ipynb` | How much would the portfolio lose in a recession? | Baseline 9-quarter loss 9.5% (\$868M); validation shows the PD model understates the effect of the economy |
 | 5 | `Part 5 - Securitization & Forward Flow Analysis.ipynb` | Did purchased loans perform as expected, and who carries the loss? | Actual loss 1.03× expected; senior notes break even at 7.5× expected loss, equity at 1.8× |
 
@@ -39,7 +40,7 @@ Part 1  LGD + downturn LGD ──► lgd_satellite.json (used in Parts 3, 4 and 
 Part 2  Which PD method? ──► champion (scorecard) and challenger (LightGBM)
    │
    ▼
-Part 3  PD model: calibration, score, stability, profit cut-off (uses the LGD from Part 1)
+Part 3  PD model: calibration, score, stability, LightGBM-guided scorecard, profit cut-off (uses the LGD from Part 1)
    │
    ▼
 Part 4  Stress test: PD × LGD × EAD under recession scenarios
@@ -92,6 +93,7 @@ The data is not included in this repository.
 * **Models:** WOE scorecard (champion) vs. LightGBM (challenger), with no class weights.
 * **Checks:** calibration and credit-score scaling (points to double the odds), then PSI and CSI stability.
 * **Explainability:** SHAP values.
+* **LightGBM-guided scorecard:** SHAP-based variable selection and cut points, an interaction grid and a distillation test, compared out of time with a DeLong test.
 * **Profit-based cut-off:** uses each loan's real cash flows and the LGD from Part 1, checked against the break-even PD $p^* = G/(G+C)$.
 
 **Part 4: Macroeconomic stress testing.**
@@ -116,9 +118,10 @@ The data is not included in this repository.
 1. **Unsecured LGD is high and moves with the economy.** About 91% of the balance is lost after default, and LGD is about 3 points higher in high-unemployment periods.
 2. **Out-of-time testing matters.** The 2015 loans defaulted more than the 2010–2014 loans (14.9% vs. 13.1%). Every PD model ranked borrowers well but predicted about 10% too few defaults.
 3. **The population did not change, the behavior did.** The score's PSI is 0.0002, so the 2015 borrowers looked like earlier borrowers. This is concept drift, and the right response is to recalibrate the model, not to rebuild it.
-4. **Risk-based pricing had already done most of the work.** With real interest income and a 91% LGD, a loan is profitable up to a PD of 26.8%. Almost no approved loan is above that level, so a stricter cut-off adds only 0.7% profit.
-5. **The stress test is a model validation case study.** The severe scenario raises the loss only from 9.51% to 9.74%. The validation traces this to a missing vintage effect: lending became riskier while unemployment was falling, and the model confuses the two trends. The notebook documents the diagnosis and a plan to fix it.
-6. **The investor's view confirms the 2015 weakness.** Forward-flow monitoring flags 6 batches, 5 of them from 2015. The senior notes are very safe (break-even at 7.5× expected loss), but equity carries the risk: it loses money at 1.8× expected loss and is sensitive to prepayment and interest income.
+4. **LightGBM's advantage cannot be moved into a scorecard.** Using SHAP to choose the variables and cut points of a WOE scorecard adds only 0.001–0.003 AUC (significant in a DeLong test, but 5–14% of the gap). The edge comes from many small non-linear effects, so the explainable scorecard stays the champion.
+5. **Risk-based pricing had already done most of the work.** With real interest income and a 91% LGD, a loan is profitable up to a PD of 26.8%. Almost no approved loan is above that level, so a stricter cut-off adds only 0.7% profit.
+6. **The stress test is a model validation case study.** The severe scenario raises the loss only from 9.51% to 9.74%. The validation traces this to a missing vintage effect: lending became riskier while unemployment was falling, and the model confuses the two trends. The notebook documents the diagnosis and a plan to fix it.
+7. **The investor's view confirms the 2015 weakness.** Forward-flow monitoring flags 6 batches, 5 of them from 2015. The senior notes are very safe (break-even at 7.5× expected loss), but equity carries the risk: it loses money at 1.8× expected loss and is sensitive to prepayment and interest income.
 
 ---
 
@@ -141,7 +144,8 @@ Files each part saves to the Drive folder:
 **Run time on standard Colab:**
 * Part 0: about 3 minutes.
 * Part 2: about 15 minutes (SVM alone takes about 7).
-* Parts 1, 3 and 5: about 5 minutes each.
+* Parts 1 and 5: about 5 minutes each.
+* Part 3: about 10 minutes (Step 7 trains five extra LightGBM models).
 * Part 4: about 10 minutes.
 
 **Packages:**
@@ -161,4 +165,4 @@ Files each part saves to the Drive folder:
 
 Tech stack: Python · pandas · NumPy · SciPy · scikit-learn · LightGBM · XGBoost · CatBoost · scorecardpy · SHAP · Matplotlib · Google Colab · FRED
 
-*Data: Lending Club loan data via Kaggle; macroeconomic data from the Federal Reserve Bank of St. Louis (FRED). This project is for educational and portfolio purposes.*
+*Data: Lending Club loan data via Kaggle; macroeconomic data from the Federal Reserve Bank of St. Louis (FRED). This project is for educational purposes.*
